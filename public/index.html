@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bug Battle</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <div class="title-row">
+          <div>
+            <h1>Bug Battle</h1>
+            <p class="subtitle">Fix the bug before the timer hits zero.</p>
+          </div>
+          <button id="themeToggle" class="ghost" aria-pressed="false">
+            Light
+          </button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="status">
+          <div class="pill" id="language">Language: -</div>
+          <div class="pill" id="timer">60s</div>
+          <div class="pill" id="score">Score: 0</div>
+        </div>
+
+        <pre class="snippet" id="buggyCode">Press Start Game to begin.</pre>
+
+        <label for="editor" class="label">Your Fix</label>
+        <textarea id="editor" rows="10" placeholder="Edit the code here..."></textarea>
+
+        <div class="controls">
+          <button id="startBtn">Start Game</button>
+          <button id="submitBtn" disabled>Submit</button>
+          <button id="nextBtn" disabled>Next Question</button>
+        </div>
+
+        <p id="result" class="result">&nbsp;</p>
+      </section>
+
+      <section class="panel">
+        <h2>Leaderboard</h2>
+        <div class="leaderboard-controls">
+          <input id="playerName" type="text" placeholder="Player name" />
+          <button id="saveScoreBtn">Save Score</button>
+        </div>
+        <ol id="leaderboard"></ol>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

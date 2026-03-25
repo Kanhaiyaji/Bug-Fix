@@ -1,0 +1,12 @@
+{
+  "name": "bug-battle",
+  "version": "1.0.0",
+  "description": "Bug Battle - a competitive bug-fixing game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
