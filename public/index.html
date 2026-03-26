@@ -25,6 +25,7 @@
           <div class="pill" id="language">Language: -</div>
           <div class="pill" id="timer">60s</div>
           <div class="pill" id="score">Score: 0</div>
+          <div class="pill" id="round">Round: 0/5</div>
         </div>
 
         <pre class="snippet" id="buggyCode">Press Start Game to begin.</pre>
@@ -32,10 +33,16 @@
         <label for="editor" class="label">Your Fix</label>
         <textarea id="editor" rows="10" placeholder="Edit the code here..."></textarea>
 
+        <div class="hint">
+          <button id="hintBtn" class="ghost" disabled>Show Hint</button>
+          <p id="hintText" class="hint-text">&nbsp;</p>
+        </div>
+
         <div class="controls">
           <button id="startBtn">Start Game</button>
           <button id="submitBtn" disabled>Submit</button>
           <button id="nextBtn" disabled>Next Question</button>
+          <button id="resetBtn" class="ghost" disabled>Reset Game</button>
         </div>
 
         <p id="result" class="result">&nbsp;</p>

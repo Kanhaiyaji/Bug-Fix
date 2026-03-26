@@ -12,6 +12,7 @@ const QUESTIONS = [
     id: 1,
     language: "C",
     buggyCode: "#include <stdio.h>\n\nint main() {\n    int x = 5;\n    if (x = 10) {\n        printf(\"x is ten\\n\");\n    }\n    return 0;\n}\n",
+    hint: "Check the comparison inside the if statement.",
     correctCode:
       "#include <stdio.h>\n\nint main() {\n    int x = 5;\n    if (x == 10) {\n        printf(\"x is ten\\n\");\n    }\n    return 0;\n}\n"
   },
@@ -20,6 +21,7 @@ const QUESTIONS = [
     language: "Java",
     buggyCode:
       "public class Main {\n    public static void main(String[] args) {\n        int sum = 0;\n        for (int i = 1; i <= 5; i++)\n            sum += i\n        System.out.println(sum);\n    }\n}\n",
+    hint: "Look for missing punctuation or braces in the loop.",
     correctCode:
       "public class Main {\n    public static void main(String[] args) {\n        int sum = 0;\n        for (int i = 1; i <= 5; i++) {\n            sum += i;\n        }\n        System.out.println(sum);\n    }\n}\n"
   },
@@ -27,6 +29,7 @@ const QUESTIONS = [
     id: 3,
     language: "Python",
     buggyCode: "def greet(name):\n    print(\"Hello \" + name)\n\nprint(greet(\"Ada\"))\n",
+    hint: "Think about what the function should return versus print.",
     correctCode:
       "def greet(name):\n    return \"Hello \" + name\n\nprint(greet(\"Ada\"))\n"
   },
@@ -35,6 +38,7 @@ const QUESTIONS = [
     language: "Java",
     buggyCode:
       "public class Main {\n    public static void main(String[] args) {\n        String word = null;\n        if (word.equals(\"bug\")) {\n            System.out.println(\"Found\");\n        }\n    }\n}\n",
+    hint: "Avoid calling methods on a possible null reference.",
     correctCode:
       "public class Main {\n    public static void main(String[] args) {\n        String word = null;\n        if (\"bug\".equals(word)) {\n            System.out.println(\"Found\");\n        }\n    }\n}\n"
   },
@@ -43,6 +47,7 @@ const QUESTIONS = [
     language: "Python",
     buggyCode:
       "numbers = [1, 2, 3, 4]\nprint(numbers[4])\n",
+    hint: "Remember how list indexes start in Python.",
     correctCode:
       "numbers = [1, 2, 3, 4]\nprint(numbers[3])\n"
   },
@@ -51,6 +56,7 @@ const QUESTIONS = [
     language: "C",
     buggyCode:
       "#include <stdio.h>\n\nint main() {\n    int i;\n    for (i = 0; i <= 5; i++) {\n        printf(\"%d \", i);\n    }\n    return 0;\n}\n",
+    hint: "Check the loop condition and how many times it runs.",
     correctCode:
       "#include <stdio.h>\n\nint main() {\n    int i;\n    for (i = 0; i < 5; i++) {\n        printf(\"%d \", i);\n    }\n    return 0;\n}\n"
   }
@@ -59,7 +65,14 @@ const QUESTIONS = [
 const leaderboard = [];
 
 function normalizeCode(code) {
-  return String(code || "").replace(/\r\n/g, "\n").trim();
+  return String(code || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("\n")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 app.get("/api/questions", (req, res) => {
@@ -68,8 +81,20 @@ app.get("/api/questions", (req, res) => {
     id: random.id,
     language: random.language,
     buggyCode: random.buggyCode,
+    hint: random.hint,
     timeLimit: 60
   });
+});
+
+app.get("/api/questions/all", (req, res) => {
+  const payload = QUESTIONS.map((question) => ({
+    id: question.id,
+    language: question.language,
+    buggyCode: question.buggyCode,
+    hint: question.hint,
+    timeLimit: 60
+  }));
+  res.json(payload);
 });
 
 app.post("/api/validate", (req, res) => {

@@ -2,11 +2,19 @@ let currentQuestion = null;
 let timerId = null;
 let timeLeft = 60;
 let score = 0;
+let currentRound = 0;
+let questionPool = [];
+let currentIndex = 0;
+let gameActive = false;
+let hintVisible = false;
+
+const ROUND_LIMIT = 5;
 
 const startBtn = document.getElementById("startBtn");
 const submitBtn = document.getElementById("submitBtn");
 const nextBtn = document.getElementById("nextBtn");
 const saveScoreBtn = document.getElementById("saveScoreBtn");
+const resetBtn = document.getElementById("resetBtn");
 
 const buggyCode = document.getElementById("buggyCode");
 const editor = document.getElementById("editor");
@@ -14,9 +22,12 @@ const result = document.getElementById("result");
 const timer = document.getElementById("timer");
 const language = document.getElementById("language");
 const scoreDisplay = document.getElementById("score");
+const roundDisplay = document.getElementById("round");
 const leaderboardList = document.getElementById("leaderboard");
 const playerName = document.getElementById("playerName");
 const themeToggle = document.getElementById("themeToggle");
+const hintBtn = document.getElementById("hintBtn");
+const hintText = document.getElementById("hintText");
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -31,10 +42,10 @@ function toggleTheme() {
   localStorage.setItem("bugbattle-theme", next);
 }
 
-async function fetchQuestion() {
-  const response = await fetch("/api/questions");
+async function fetchAllQuestions() {
+  const response = await fetch("/api/questions/all");
   if (!response.ok) {
-    throw new Error("Failed to fetch question");
+    throw new Error("Failed to fetch questions");
   }
   return response.json();
 }
@@ -42,6 +53,13 @@ async function fetchQuestion() {
 function setButtons(state) {
   submitBtn.disabled = !state.canSubmit;
   nextBtn.disabled = !state.canNext;
+}
+
+function setHintState(enabled) {
+  hintBtn.disabled = !enabled;
+  hintText.textContent = "";
+  hintVisible = false;
+  hintBtn.textContent = "Show Hint";
 }
 
 function startTimer(seconds) {
@@ -57,6 +75,7 @@ function startTimer(seconds) {
       clearInterval(timerId);
       result.textContent = "Time's up. Try the next one.";
       setButtons({ canSubmit: false, canNext: true });
+      setHintState(false);
     }
   }, 1000);
 }
@@ -66,15 +85,49 @@ function resetEditor() {
   editor.disabled = false;
 }
 
+function updateRound() {
+  roundDisplay.textContent = `Round: ${currentRound}/${ROUND_LIMIT}`;
+}
+
+function shuffleArray(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function endGame() {
+  gameActive = false;
+  clearInterval(timerId);
+  setButtons({ canSubmit: false, canNext: false });
+  setHintState(false);
+  startBtn.disabled = false;
+  startBtn.textContent = "Play Again";
+  resetBtn.disabled = false;
+  result.textContent = `Game over! Final score: ${score}/${ROUND_LIMIT}.`;
+}
+
 async function loadQuestion() {
   try {
-    currentQuestion = await fetchQuestion();
+    if (!gameActive) return;
+    if (currentRound >= ROUND_LIMIT || currentIndex >= questionPool.length) {
+      endGame();
+      return;
+    }
+
+    currentQuestion = questionPool[currentIndex];
+    currentIndex += 1;
+    currentRound += 1;
     buggyCode.textContent = currentQuestion.buggyCode;
     language.textContent = `Language: ${currentQuestion.language}`;
     result.textContent = "";
+    updateRound();
     resetEditor();
     startTimer(currentQuestion.timeLimit || 60);
     setButtons({ canSubmit: true, canNext: false });
+    setHintState(true);
   } catch (error) {
     result.textContent = "Could not load a question.";
   }
@@ -100,6 +153,7 @@ async function submitAnswer() {
 
   clearInterval(timerId);
   editor.disabled = true;
+  setHintState(false);
 
   if (data.correct) {
     score += 1;
@@ -109,7 +163,11 @@ async function submitAnswer() {
   }
 
   scoreDisplay.textContent = `Score: ${score}`;
-  setButtons({ canSubmit: false, canNext: true });
+  if (currentRound >= ROUND_LIMIT) {
+    endGame();
+  } else {
+    setButtons({ canSubmit: false, canNext: true });
+  }
 }
 
 async function loadLeaderboard() {
@@ -146,24 +204,69 @@ async function saveScore() {
   }
 }
 
-startBtn.addEventListener("click", async () => {
-  startBtn.disabled = true;
-  await loadQuestion();
-  await loadLeaderboard();
-});
+async function startGame() {
+  try {
+    const allQuestions = await fetchAllQuestions();
+    questionPool = shuffleArray(allQuestions).slice(0, ROUND_LIMIT);
+    currentIndex = 0;
+    currentRound = 0;
+    score = 0;
+    scoreDisplay.textContent = "Score: 0";
+    updateRound();
+    result.textContent = "";
+    gameActive = true;
+    startBtn.disabled = true;
+    resetBtn.disabled = false;
+    await loadQuestion();
+    await loadLeaderboard();
+  } catch (error) {
+    result.textContent = "Could not start the game.";
+  }
+}
+
+function resetGame() {
+  clearInterval(timerId);
+  gameActive = false;
+  currentQuestion = null;
+  currentRound = 0;
+  currentIndex = 0;
+  score = 0;
+  scoreDisplay.textContent = "Score: 0";
+  updateRound();
+  buggyCode.textContent = "Press Start Game to begin.";
+  editor.value = "";
+  editor.disabled = true;
+  result.textContent = "";
+  setButtons({ canSubmit: false, canNext: false });
+  setHintState(false);
+  resetBtn.disabled = true;
+  startBtn.disabled = false;
+  startBtn.textContent = "Start Game";
+}
+
+startBtn.addEventListener("click", startGame);
 
 submitBtn.addEventListener("click", submitAnswer);
 
 nextBtn.addEventListener("click", async () => {
+  if (!gameActive) return;
   await loadQuestion();
 });
 
 saveScoreBtn.addEventListener("click", saveScore);
+resetBtn.addEventListener("click", resetGame);
+hintBtn.addEventListener("click", () => {
+  if (!currentQuestion || !currentQuestion.hint) return;
+  hintVisible = !hintVisible;
+  hintText.textContent = hintVisible ? currentQuestion.hint : "";
+  hintBtn.textContent = hintVisible ? "Hide Hint" : "Show Hint";
+});
 
 window.addEventListener("load", loadLeaderboard);
 window.addEventListener("load", () => {
   const savedTheme = localStorage.getItem("bugbattle-theme") || "light";
   applyTheme(savedTheme);
+  resetGame();
 });
 
 themeToggle.addEventListener("click", toggleTheme);
